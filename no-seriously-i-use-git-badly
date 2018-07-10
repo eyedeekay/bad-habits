@@ -1,0 +1,28 @@
+#! /usr/bin/env bash
+
+
+log=$(git log --oneline | nl -v0 | sed 's/^ \+/&HEAD~/' 2>&1)
+
+IFS=$'\n'
+previd=""
+for l in $log; do
+    id=$(echo "$l" | sed 's|  | |g' | sed 's|  | |g' | sed 's|\t| |g' | sed 's|  | |g' | sed -e 's|.HEAD~||g' | tr ' ' '-' | cut -f2- -d'-' | cut -f2- -d'-' )
+    xid=$(echo "$l" | sed 's|  | |g' | sed 's|  | |g' | sed 's|\t| |g' | tr ' ' '\n')
+    if [ "$id" = "$previd" ]; then
+        index="false"
+        for i in $xid; do
+            if [ "$index" = "false" ]; then
+                index="true"
+            else
+                j=$(echo $i | tr -d " " | tr -d '\n' | tr -d '\t')
+                echo "git commit -a --fixup=$j --allow-empty"
+                git commit --fixup=$j --allow-empty
+                GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash $j~1
+                break
+            fi
+        done
+    fi
+    previd="$id"
+done
+
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash master

@@ -1,0 +1,29 @@
+#! /usr/bin/env bash
+
+. /usr/local/lib/curse-words
+
+log=$(git log --oneline | nl -v0 | sed 's/^ \+/&HEAD~/' 2>&1)
+
+IFS=$'\n'
+for l in $log; do
+    for w in $curselist; do
+        ident=$(echo "$l" | grep "$w"|| echo none)
+        if [ "$ident" != "none" ]; then
+            id=$(echo "$ident" | sed 's|  | |g' | sed 's|  | |g' | sed 's|\t| |g' | tr ' ' '\n')
+            index="false"
+            for i in $id; do
+                if [ "$index" = "false" ]; then
+                    index="true"
+                else
+                    j=$(echo $i | tr -d " " | tr -d '\n' | tr -d '\t')
+                    echo "git commit -a --fixup=$j --allow-empty"
+                    git commit -a --fixup=$j --allow-empty
+                    GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash $j~1
+                    break
+                fi
+            done
+        fi
+    done
+done
+
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash master
