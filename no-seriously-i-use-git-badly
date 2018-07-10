@@ -12,17 +12,25 @@ for l in $log; do
         index="false"
         for i in $xid; do
             if [ "$index" = "false" ]; then
-                index="true"
+                index="false"
             else
-                j=$(echo $i | tr -d " " | tr -d '\n' | tr -d '\t')
-                echo "git commit -a --fixup=$j --allow-empty"
-                git commit --fixup=$j --allow-empty
-                GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash $j~1
-                break
+                for xi in $xid; do
+                    if [ "$index" = "false" ]; then
+                        index="true"
+                    else
+                        j=$(echo $i | tr -d " " | tr -d '\n' | tr -d '\t')
+                        k=$(echo $xi | tr -d " " | tr -d '\n' | tr -d '\t')
+                        echo "git commit -a --fixup=$j --allow-empty"
+                        git commit --fixup=$j --allow-empty
+                        GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash $j~$k
+                        break
+                    fi
+                done
             fi
         done
     fi
     previd="$id"
+    prevxid="$xid"
 done
 
 GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash master
